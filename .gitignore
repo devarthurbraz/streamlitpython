@@ -1,4 +1,7 @@
 .env
 cookies.txt
 __pycache__/
-*.pyc
+temp_media*
+venv/
+forEvetor/
+projetocampinas/
