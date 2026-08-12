@@ -30,6 +30,12 @@ def extrair_texto_youtube_v2(url, status_placeholder):
         'subtitleslangs': ['pt.*', 'en.*', 'es.*', 'all'],
         'quiet': True,
         'no_warnings': True,
+        # CORREÇÃO ANTI-BOT AQUI
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios']
+            }
+        }
     }
 
     if cookies_param:
@@ -93,11 +99,11 @@ def extrair_texto_youtube_v2(url, status_placeholder):
 
     # Se a legenda foi recuperada com sucesso
     if texto_legenda and len(texto_legenda.strip()) > 50:
-        status_placeholder.markdown("✅ **Legenda encontrada, trasncrição será rápida..**")
+        status_placeholder.markdown("✅ **Legenda encontrada, transcrição será rápida..**")
         return texto_legenda, f"Legenda Nativa ({idioma_encontrado})"
 
     # Se não houver legenda, avisa e usa o Whisper (Áudio)
-    status_placeholder.markdown("⚠️ **Transcrevendo via Áudio pode demorar um poquinho mais...**")
+    status_placeholder.markdown("⚠️ **Transcrevendo via Áudio pode demorar um pouquinho mais...**")
 
     saida_base = os.path.join(DIR_SCRIPT, "temp_media")
 
@@ -113,6 +119,12 @@ def extrair_texto_youtube_v2(url, status_placeholder):
             "preferredcodec": "mp3",
             "preferredquality": "192",
         }],
+        # CORREÇÃO ANTI-BOT AQUI TAMBÉM
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios"]
+            }
+        }
     }
 
     if cookies_param:
