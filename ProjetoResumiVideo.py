@@ -17,33 +17,13 @@ load_dotenv(dotenv_path=caminho_env, override=True)
 
 def extrair_texto_youtube_v2(url, status_placeholder):
     """
-    1. Tenta extrair a transcrição instantaneamente via youtube-transcript-api.
-    2. Se falhar, tenta via yt-dlp buscando metadados/legendas.
-    3. Se não houver legendas, realiza o download do áudio e transcreve via Whisper.
+    Tenta extrair a legenda direta via yt-dlp. 
+    Se não houver, avisa e realiza a transcrição por áudio via Whisper.
     """
-    status_placeholder.markdown("🔍 **Buscando legendas do vídeo...**")
-
-    # Extrai o ID do vídeo a partir da URL
-    video_id_match = re.search(r"(?:v=|\/([0-9A-Za-z_-]{11}))", url)
-    video_id = video_id_match.group(1) if video_id_match else None
-
-    # --- MÉTODO 1: API de Transcrição Direta (Rápido e sem bloqueios 403) ---
-    if video_id:
-        try:
-            transcript_list = YouTubeTranscriptApi.get_transcript(
-                video_id, languages=['pt', 'pt-BR', 'pt-orig', 'en', 'en-US', 'es']
-            )
-            texto_legenda = " ".join([item['text'] for item in transcript_list])
-            if len(texto_legenda.strip()) > 50:
-                status_placeholder.markdown("✅ **Legenda extraída com sucesso via API!**")
-                return texto_legenda, "Legenda Direta (YouTube API)"
-        except Exception:
-            pass  # Se não houver legendas via API, prossegue para os métodos via yt-dlp
-
-    # --- MÉTODO 2: yt-dlp (Metadados e Legendas) ---
     caminho_cookies = os.path.join(DIR_SCRIPT, "cookies.txt")
     cookies_param = caminho_cookies if os.path.exists(caminho_cookies) else None
 
+    # Configuração para buscar apenas metadados e legendas (sem baixar o vídeo)
     ydl_opts_sub = {
         'skip_download': True,
         'writesubtitles': True,
@@ -51,9 +31,10 @@ def extrair_texto_youtube_v2(url, status_placeholder):
         'subtitleslangs': ['pt.*', 'en.*', 'es.*', 'all'],
         'quiet': True,
         'no_warnings': True,
+        # CORREÇÃO ANTI-BOT AQUI
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web']
+                'player_client': ['android', 'ios']
             }
         }
     }
@@ -70,6 +51,7 @@ def extrair_texto_youtube_v2(url, status_placeholder):
             
             subtitles = info.get('subtitles', {})
             auto_subtitles = info.get('automatic_captions', {})
+
             todas_legendas = {**subtitles, **auto_subtitles}
 
             if todas_legendas:
@@ -116,12 +98,13 @@ def extrair_texto_youtube_v2(url, status_placeholder):
     except Exception:
         pass
 
+    # Se a legenda foi recuperada com sucesso
     if texto_legenda and len(texto_legenda.strip()) > 50:
         status_placeholder.markdown("✅ **Legenda encontrada, transcrição será rápida..**")
         return texto_legenda, f"Legenda Nativa ({idioma_encontrado})"
 
-    # --- MÉTODO 3: Whisper (Download de Áudio - Fallback) ---
-    status_placeholder.markdown("⚠️ **Transcrevendo via Áudio (pode demorar um pouquinho mais)...**")
+    # Se não houver legenda, avisa e usa o Whisper (Áudio)
+    status_placeholder.markdown("⚠️ **Transcrevendo via Áudio pode demorar um pouquinho mais...**")
 
     saida_base = os.path.join(DIR_SCRIPT, "temp_media")
 
@@ -130,20 +113,18 @@ def extrair_texto_youtube_v2(url, status_placeholder):
         "no_warnings": True,
         "check_formats": False,
         "noplaylist": True,
-        "format": "ba/ba*",
+        "format": "bestaudio/best",
         "outtmpl": f"{saida_base}.%(ext)s",
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
             "preferredquality": "192",
         }],
+        # CORREÇÃO ANTI-BOT AQUI TAMBÉM
         "extractor_args": {
             "youtube": {
-                "player_client": ["ios", "mweb"]
+                "player_client": ["android", "ios"]
             }
-        },
-        "http_headers": {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
         }
     }
 
@@ -163,7 +144,6 @@ def extrair_texto_youtube_v2(url, status_placeholder):
         os.remove(caminho_audio)
 
     return texto_transcrito, "Transcrição por Áudio (Whisper)"
-
 
 def resumir_com_gemini(texto, status_placeholder):
     """
