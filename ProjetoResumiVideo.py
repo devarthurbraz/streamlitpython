@@ -30,10 +30,9 @@ def extrair_texto_youtube_v2(url, status_placeholder):
         'subtitleslangs': ['pt.*', 'en.*', 'es.*', 'all'],
         'quiet': True,
         'no_warnings': True,
-        # CORREÇÃO ANTI-BOT AQUI
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios']
+                'player_client': ['android', 'web', 'ios']
             }
         }
     }
@@ -112,18 +111,20 @@ def extrair_texto_youtube_v2(url, status_placeholder):
         "no_warnings": True,
         "check_formats": False,
         "noplaylist": True,
-        "format": "bestaudio/best",
+        "format": "ba/ba*", # pega a melhor fonte de áudio disponível
         "outtmpl": f"{saida_base}.%(ext)s",
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
             "preferredquality": "192",
         }],
-        # CORREÇÃO ANTI-BOT AQUI TAMBÉM
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "ios"]
+                "player_client": ["mweb", "web", "android"]
             }
+        },
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }
     }
 
