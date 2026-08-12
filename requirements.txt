@@ -3,4 +3,3 @@ yt-dlp
 openai-whisper
 google-genai
 python-dotenv
-youtube-transcript-api
